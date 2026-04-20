@@ -1,0 +1,70 @@
+adapter: tkt
+
+vocab:
+  ticket: ticket
+  tickets: tickets
+  review_artifact: branch ready for review
+  review_action_sentence: Publish the branch and move linked tickets to needs-testing
+  dependency_link_prefix: Depends on
+  close_trailer_prefix: "Closes:"
+
+validators:
+  ticket_id:
+    description: tkt identifier or unambiguous partial ID, such as auth-task, AUTH-42, or 5c4.
+    runtime_type: string
+    regex: "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+
+commands:
+  ticket_fetch:
+    steps:
+      - argv: ["tkt", "show", "{id}"]
+  ticket_create:
+    steps:
+      - argv: ["tkt", "create", "{title}", "--description", "{body_file:contents}"]
+  ticket_close:
+    steps:
+      - argv: ["tkt", "edit", "{id}", "--status", "closed"]
+  ticket_comment:
+    steps:
+      - argv: ["tkt", "add-note", "{id}", "{body_file:contents}"]
+  work_publish:
+    steps:
+      - argv: ["git", "push", "-u", "origin", "HEAD"]
+      - argv: ["tkt", "add-note", "{ticket_id}", "{body_file:contents}"]
+        foreach:
+          param: linked_ticket_ids
+          as: ticket_id
+      - argv: ["tkt", "edit", "{ticket_id}", "--status", "needs_testing"]
+        foreach:
+          param: linked_ticket_ids
+          as: ticket_id
+  work_diff:
+    steps:
+      - argv: ["git", "diff", "{target_ref}..HEAD", "--"]
+
+formatters:
+  ticket_link: "`{{ id }}`"
+  dependency_annotation: "Depends on {{ ticket_ids | ticket_ids_pretty }}"
+  close_trailer: "Closes: {{ ticket_ids | ticket_ids_bracketed }}"
+  review_body: |
+    Branch: {{ branch_ref }}
+
+    {{ summary }}
+
+    ## Linked tickets
+    {{ linked_ticket_ids | ticket_ids_pretty }}
+
+formatter_filters:
+  ticket_ids_pretty: "join_with(sep=', ')"
+  ticket_ids_bracketed: "join_with_affixes(sep=', ', prefix='[', suffix=']')"
+
+fragments:
+  ticket_body_sections: |
+    ## Spec Compliance Checklist
+    - [ ] REQ-A-01: assertion
+    - [ ] REQ-A-02: assertion
+  ticket_identifier_style: "auth-task, AUTH-42, 5c4 - tkt identifiers or unambiguous partial IDs"
+  review_submission: |
+    1. Commit on the ticket branch and render `review_body` to a path matching `body_file_path`.
+    2. Push, attach the review body to each linked ticket, then set each linked ticket to `needs_testing` with `work_publish`.
+    3. Reviewer responds on the ticket; address feedback, update the ticket, and re-transition.

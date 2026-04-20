@@ -1,0 +1,26 @@
+{
+  "name": "wi-adam-skills",
+  "owner": {
+    "name": "Adam Winstanley",
+    "email": "adam@adamwinstanley.com"
+  },
+  "metadata": {
+    "description": "Multi-runtime agent-skill plugins for epic workflows and adversarial review."
+  },
+  "plugins": [
+    {
+      "name": "epic-workflow-github",
+      "source": "./plugins/claude/epic-workflow-github",
+      "description": "Epic workflow + adversarial review, github-flavored.",
+      "category": "productivity",
+      "tags": ["workflow", "github", "agent-team"]
+    },
+    {
+      "name": "epic-workflow-tkt",
+      "source": "./plugins/claude/epic-workflow-tkt",
+      "description": "Epic workflow + adversarial review, tkt-flavored.",
+      "category": "productivity",
+      "tags": ["workflow", "tkt", "agent-team"]
+    }
+  ]
+}

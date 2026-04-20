@@ -1,0 +1,9 @@
+policy:
+  allow_implicit_invocation: false
+dependencies:
+  mcp_servers:
+    - id: claude-code
+      command: ["claude", "mcp", "serve"]
+      bundled: false
+  setup:
+    - "Claude Code must be installed and authenticated on the same machine.\nAdd Claude Code as a Codex MCP server for manual development:\n\n    codex mcp add claude-code -- claude mcp serve"

@@ -1,0 +1,32 @@
+{
+  "name": "wi-adam-skills",
+  "interface": {
+    "displayName": "Adam Winstanley - agent skills"
+  },
+  "plugins": [
+    {
+      "name": "epic-workflow-github",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex/epic-workflow-github"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "epic-workflow-tkt",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex/epic-workflow-tkt"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

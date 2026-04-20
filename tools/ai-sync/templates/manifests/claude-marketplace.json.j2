@@ -1,0 +1,21 @@
+{
+  "name": "{{ marketplace.name }}",
+  "owner": {
+    "name": "{{ marketplace.owner.name }}",
+    "email": "{{ marketplace.owner.email }}"
+  },
+  "metadata": {
+    "description": "Multi-runtime agent-skill plugins for epic workflows and adversarial review."
+  },
+  "plugins": [
+{% for item in plugins %}
+    {
+      "name": "{{ item.name }}",
+      "source": "{{ item.source }}",
+      "description": "{{ item.description }}",
+      "category": "productivity",
+      "tags": {{ item.tags | tojson }}
+    }{{ "," if not loop.last else "" }}
+{% endfor %}
+  ]
+}

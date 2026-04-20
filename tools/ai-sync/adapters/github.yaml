@@ -1,0 +1,62 @@
+adapter: github
+
+vocab:
+  ticket: issue
+  tickets: issues
+  review_artifact: pull request
+  review_action_sentence: Open a pull request
+  dependency_link_prefix: Blocked by
+  close_trailer_prefix: Closes
+
+validators:
+  ticket_id:
+    description: GitHub issue number. A leading # is stripped before matching.
+    runtime_type: string
+    regex: "^\\d+$"
+    normalize: strip_leading_hash
+
+commands:
+  ticket_fetch:
+    steps:
+      - argv: ["gh", "issue", "view", "{id}"]
+  ticket_create:
+    steps:
+      - argv: ["gh", "issue", "create", "--title", "{title}", "--body-file", "{body_file}"]
+  ticket_close:
+    steps:
+      - argv: ["gh", "issue", "close", "{id}"]
+  ticket_comment:
+    steps:
+      - argv: ["gh", "issue", "comment", "{id}", "--body-file", "{body_file}"]
+  work_publish:
+    steps:
+      - argv: ["gh", "pr", "create", "--title", "{title}", "--body-file", "{body_file}"]
+  work_diff:
+    steps:
+      - argv: ["gh", "pr", "diff", "{target_ref}"]
+
+formatters:
+  ticket_link: "#{{ id }}"
+  dependency_annotation: "Blocked by {{ ticket_ids | ticket_ids_pretty }}"
+  close_trailer: "Closes {{ ticket_ids | ticket_ids_pretty }}"
+  review_body: |
+    {{ summary }}
+
+    ## Linked issues
+    {{ linked_ticket_ids | ticket_ids_pretty }}
+
+    Closes {{ linked_ticket_ids | ticket_ids_pretty }}
+
+formatter_filters:
+  ticket_ids_pretty: "join_with_prefix(sep=', ', prefix='#')"
+
+fragments:
+  ticket_body_sections: |
+    ## Spec Compliance Checklist
+    - [ ] REQ-A-01: assertion
+    - [ ] REQ-A-02: assertion
+  ticket_identifier_style: "#42, #55 - issue numbers"
+  review_submission: |
+    1. Render the PR body via the `review_body` formatter and write it to a path matching `body_file_path`.
+    2. Push the branch.
+    3. Open the pull request with `work_publish`.

@@ -1,0 +1,68 @@
+{{ skill_frontmatter(
+  name="epic-decomposition",
+  description=descriptions["epic-decomposition"],
+  argument_hint="<design-doc-path>",
+  allow_implicit_invocation=false
+) }}
+
+{{ generated_notice }}
+
+# Epic Decomposition
+
+Break the design doc at `$ARGUMENTS` into subtask {{ vocab.tickets }} with full requirement traceability.
+
+Core principle: every requirement ID from the design doc appears in exactly one subtask checklist. Nothing dropped, nothing duplicated.
+
+## Inputs
+
+- Design doc on disk
+- Parent epic {{ vocab.ticket }} ID
+- Adapter ID style: {{ fragments.ticket_identifier_style }}
+
+## Process
+
+1. Read the Requirements Summary section and build the complete requirement list.
+2. Identify one-PR subtask boundaries that are independently mergeable and testable.
+3. Build a dependency DAG between subtasks.
+4. Draft each subtask body with parent epic, description, requirements, checklist, design reference, and dependencies.
+5. Verify every requirement ID appears exactly once.
+6. Present the proposed subtasks, dependency graph, and coverage matrix to the user for approval.
+7. After approval, create the subtask {{ vocab.tickets }}.
+
+## Subtask Body Shape
+
+```markdown
+## Parent Epic
+Part of <epic ticket link and title>
+
+## Description
+<What this PR delivers>
+
+## Requirements
+This subtask satisfies:
+- REQ-ID: assertion
+
+{{ fragments.ticket_body_sections }}
+
+## Design Reference
+See `docs/plans/<design-doc>.md`.
+
+## Dependencies
+{{ fmt("dependency_annotation", ticket_ids=["<validated ticket id>", "..."]) }}
+```
+
+## Create Subtask Tickets
+
+For each approved subtask, write the body to a path matching `body_file_path`, then run:
+
+{{ cmd("ticket_create", title="<validated subtask title>", body_file="<validated body file path>") }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("ticket_create") }}
+
+Run each argv array directly through the runtime's structured command mechanism. Preserve one argv element per rendered token.
+
+## Handoff
+
+Report the created subtask {{ vocab.tickets }}, the dependency order, and the coverage verification result. Suggest running `adversarial-design-review` on the decomposition before planning the first unblocked subtask.

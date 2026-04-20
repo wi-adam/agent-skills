@@ -1,0 +1,66 @@
+commands:
+  ticket_fetch:
+    params:
+      id: ticket_id
+  ticket_create:
+    params:
+      title: shell_safe_title
+      body_file: body_file_path
+  ticket_close:
+    params:
+      id: ticket_id
+  ticket_comment:
+    params:
+      id: ticket_id
+      body_file: body_file_path
+  work_publish:
+    params:
+      title: shell_safe_title
+      body_file: body_file_path
+      linked_ticket_ids: ticket_id_list
+  work_diff:
+    params:
+      target_ref: git_ref
+
+formatters:
+  ticket_link:
+    params:
+      id: ticket_id
+  dependency_annotation:
+    params:
+      ticket_ids: ticket_id_list
+  close_trailer:
+    params:
+      ticket_ids: ticket_id_list
+  review_body:
+    params:
+      title: plain_text
+      summary: markdown_text
+      linked_ticket_ids: ticket_id_list
+      branch_ref: git_ref
+    summary: Render the review artifact body before work_publish.
+
+shared_validators:
+  plain_text:
+    description: Human-facing single value. Not executed as a command.
+    runtime_type: string
+  markdown_text:
+    description: Markdown body content. Write only to a validated body_file path; never interpolate into argv.
+    runtime_type: string
+  shell_safe_title:
+    description: "Free text for a CLI title argument. Allowed characters are ASCII letters, digits, spaces, and . , : ; ( ) / _ - @."
+    runtime_type: string
+    regex: "^[A-Za-z0-9 .,:;()_/@\\-]+$"
+  git_ref:
+    description: "Git ref. Must not start with -, contain whitespace, or contain ..."
+    runtime_type: string
+    regex: "^(?!-)(?!.*\\.\\.)(?!.*\\s)[A-Za-z0-9][A-Za-z0-9._/@#-]*$"
+  body_file_path:
+    description: Relative path under .agent-skills-tmp/. No absolute paths, no .. segments, filename must start with an alphanumeric and end in .md.
+    runtime_type: string
+    regex: "^\\.agent-skills-tmp/[A-Za-z0-9][A-Za-z0-9_.-]*\\.md$"
+  ticket_id_list:
+    description: Non-empty list of adapter-specific ticket IDs.
+    kind: composed
+    runtime_type: list
+    item_validator: ticket_id

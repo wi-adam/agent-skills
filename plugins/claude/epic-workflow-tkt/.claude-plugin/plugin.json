@@ -1,0 +1,13 @@
+{
+  "name": "epic-workflow-tkt",
+  "description": "Epic workflow (brainstorm -> decompose -> plan -> execute -> audit) plus adversarial code and design review, tkt-flavored.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Adam Winstanley",
+    "email": "adam@adamwinstanley.com"
+  },
+  "homepage": "https://github.com/wi-adam/agent-skills",
+  "repository": "https://github.com/wi-adam/agent-skills",
+  "license": "MIT",
+  "keywords": ["workflow", "spec-compliance", "agent-team", "tkt"]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "{{ runtime_config.reviewer.bundled_mcp_server.id }}": {
+      "command": "{{ runtime_config.reviewer.bundled_mcp_server.command[0] }}",
+      "args": {{ runtime_config.reviewer.bundled_mcp_server.command[1:] | tojson }}
+    }
+  }
+}

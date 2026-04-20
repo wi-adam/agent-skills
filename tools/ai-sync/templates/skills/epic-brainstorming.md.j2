@@ -1,0 +1,68 @@
+{{ skill_frontmatter(
+  name="epic-brainstorming",
+  description=descriptions["epic-brainstorming"],
+  argument_hint="<epic-ticket-id>",
+  allow_implicit_invocation=false
+) }}
+
+{{ generated_notice }}
+
+# Epic Brainstorming
+
+Turn epic {{ vocab.ticket }} `$ARGUMENTS` into a design doc with traceable, testable requirements.
+
+Core principle: every behavioral requirement gets a unique hierarchical ID. These IDs flow through decomposition, planning, execution, and final audit. If a requirement does not have an ID, it does not exist.
+
+## Inputs
+
+- Epic {{ vocab.ticket }} ID in this style: {{ fragments.ticket_identifier_style }}
+- Access to the project repository
+
+## Fetch The Epic
+
+{{ cmd("ticket_fetch", id="<validated ticket id>") }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("ticket_fetch") }}
+
+Run each argv array directly through the runtime's structured command mechanism. Preserve one argv element per rendered token.
+
+## Process
+
+1. Read the epic {{ vocab.ticket }} and identify scope, constraints, and out-of-scope items.
+2. Ask clarifying questions one at a time until the design direction is clear.
+3. Write a design doc to `docs/plans/YYYY-MM-DD-<name>-design.md`.
+4. End the design doc with a Requirements Summary section that lists every requirement ID.
+5. Commit the design doc.
+
+## Requirement IDs
+
+Use a short prefix plus section plus sequence:
+
+```text
+AUTH-REG-01: Rejects under-13 registration with a parental controls message
+AUTH-REG-02: Validates username uniqueness
+AUTH-JWT-01: Access token expires after 15 minutes
+```
+
+Behavioral requirements should be testable assertions. Architectural and structural requirements may be descriptive, but they still need IDs when downstream implementation must satisfy them.
+
+## Requirements Summary
+
+The design doc must end with a machine-readable summary:
+
+```markdown
+## Requirements Summary
+
+### Registration (AUTH-REG)
+- AUTH-REG-01: Rejects under-13 registration with a parental controls message
+- AUTH-REG-02: Validates username uniqueness
+
+### JWT (AUTH-JWT)
+- AUTH-JWT-01: Access token expires after 15 minutes
+```
+
+## Handoff
+
+Tell the user the design doc path and suggest running `adversarial-design-review` before `epic-decomposition`.

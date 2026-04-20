@@ -1,0 +1,33 @@
+runtime: codex
+
+reviewer:
+  model: claude
+  install_prerequisite: |
+    Claude Code must be installed and authenticated on the same machine.
+    Add Claude Code as a Codex MCP server for manual development:
+
+        codex mcp add claude-code -- claude mcp serve
+  mechanism: |
+    The verified server command is `claude mcp serve`. It exposes the MCP tool
+    named `Agent`, which accepts `description`, `prompt`, optional
+    `subagent_type`, optional `model`, and optional `run_in_background`.
+  bundled_mcp_server:
+    id: claude-code
+    command: ["claude", "mcp", "serve"]
+    manifest_path: ".mcp.json"
+    verified_for_plugin_bundle: false
+  skill_dependency_metadata: "skills/<adversarial skill>/agents/openai.yaml"
+  tool_name: Agent
+  verified:
+    date: 2026-04-20
+    claude_code_version: 2.1.114
+    server: claude mcp serve
+
+teammate:
+  mechanism: natural-language delegation plus optional Codex agents
+  spawn_example: |
+    Ask Codex to spawn delegated workers only when the user explicitly requests delegation.
+    Include owned files, requirement IDs, acceptance checks, and the spec amendment stop rule.
+  notes: |
+    Codex spawns subagents only when explicitly instructed. Codex plugins do not ship
+    Claude-style teammate agent files.

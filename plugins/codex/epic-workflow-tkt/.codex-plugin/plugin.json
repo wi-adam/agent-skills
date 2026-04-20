@@ -1,0 +1,19 @@
+{
+  "name": "epic-workflow-tkt",
+  "version": "0.1.0",
+  "description": "Epic workflow plus adversarial review, tkt-flavored.",
+  "author": {
+    "name": "Adam Winstanley",
+    "email": "adam@adamwinstanley.com"
+  },
+  "homepage": "https://github.com/wi-adam/agent-skills",
+  "repository": "https://github.com/wi-adam/agent-skills",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Epic workflow (Tkt)",
+    "shortDescription": "Spec-compliant epic workflow with cross-model review",
+    "category": "Productivity",
+    "brandColor": "#345995"
+  }
+}

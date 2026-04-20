@@ -1,0 +1,27 @@
+runtime: claude
+
+reviewer:
+  model: codex
+  install_prerequisite: |
+    Install and authenticate Codex locally. Add Codex as an MCP server in Claude Code:
+
+        claude mcp add codex -- codex mcp-server
+
+    Restart Claude Code after adding the server.
+  mechanism: |
+    Invoke the MCP tool named `codex` with `prompt`, `cwd`, and `sandbox`.
+    Save the returned `threadId` and use `codex-reply` for follow-up rounds.
+  tool_name: codex
+  reply_tool_name: codex-reply
+  verified:
+    date: 2026-04-20
+    codex_cli_version: 0.121.0
+    server: codex mcp-server
+
+teammate:
+  mechanism: Agent + SendMessage (built-in)
+  spawn_example: 'Agent(subagent_type="implementer-standard", prompt="...")'
+  message_example: 'SendMessage(to="<teammate-name>", prompt="...")'
+  notes: |
+    Implementer and reviewer agent definitions ship with the Claude plugin in `agents/`.
+    Reference them by name through `subagent_type`.

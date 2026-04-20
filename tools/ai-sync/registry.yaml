@@ -1,0 +1,346 @@
+schema_version: 2
+
+marketplace:
+  name: wi-adam-skills
+  owner:
+    name: Adam Winstanley
+    email: adam@adamwinstanley.com
+  homepage: https://github.com/wi-adam/agent-skills
+  repository: https://github.com/wi-adam/agent-skills
+  license: MIT
+  version: 0.1.0
+
+plugins:
+  - id: epic-workflow
+    skills:
+      - adversarial-code-review
+      - adversarial-design-review
+      - epic-brainstorming
+      - epic-decomposition
+      - subtask-planning
+      - team-execution
+      - epic-completion
+    agents_for_runtimes:
+      claude:
+        - implementer-standard
+        - implementer-complex
+        - spec-reviewer
+
+runtime_adapter_matrix:
+  runtimes: [claude, codex]
+  adapters: [github, tkt]
+
+skill_descriptions:
+  adversarial-code-review: Use when code changes need critical review from an independent AI reviewer before merging.
+  adversarial-design-review: Use when a design doc, epic breakdown, or implementation plan needs critical review from an independent AI reviewer before proceeding.
+  epic-brainstorming: Turn an epic ticket into a design doc with hierarchical requirement IDs and a machine-readable requirements summary.
+  epic-decomposition: Break a design doc into subtask tickets with one-to-one requirement coverage and dependency ordering.
+  subtask-planning: Break one subtask ticket into parallelizable implementation tasks with file ownership, dependency edges, and teammate specs.
+  team-execution: Execute a subtask plan with delegated workers, spec review, quality gates, and live improvement capture.
+  epic-completion: Audit final implementation against the spec, verify integration, and capture durable process improvements.
+
+agent_descriptions:
+  implementer-standard: Implements straightforward tasks such as migrations, type definitions, simple CRUD, boilerplate tests, and config files.
+  implementer-complex: Implements tasks requiring judgment such as business logic, security-sensitive code, state management, and integration points.
+  spec-reviewer: Audits completed implementation work against requirement IDs and the design doc.
+
+improvements:
+  - id: AI-EXEC-001
+    status: active
+    category: execution
+    title: Use autonomous delegated execution for implementer and reviewer agents
+    summary: Delegated implementer and reviewer agents must run autonomously.
+    problem: Permission-gated delegated execution blocks work and creates unnecessary lead intervention.
+    policy: Delegated implementer and reviewer agents must run autonomously. The lead owns user-facing approvals and clarification.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer, reviewer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Use auto execution mode for implementer and reviewer teammates.
+      codex:
+        notes:
+          - Spawn delegated worker and reviewer agents without user-input-gating patterns.
+
+  - id: AI-EXEC-002
+    status: active
+    category: execution
+    title: Reuse implementer agents across waves instead of spawning per task
+    summary: Spawn implementers matching peak parallelism once, then reuse them for later waves.
+    problem: Spawning a new agent per task wastes setup time and context loading.
+    policy: Spawn implementer agents matching peak parallelism, plus one spec reviewer. Reuse idle agents for later-wave tasks.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Spawn implementers for the first wave only. Reuse idle implementers for later waves via SendMessage with the new task spec.
+      codex:
+        notes:
+          - Spawn workers matching peak parallelism, then reassign idle workers to later tasks instead of creating new workers.
+
+  - id: AI-EXEC-003
+    status: active
+    category: execution
+    title: Sync working branch with main before starting implementation
+    summary: Fetch and rebase onto main before spawning implementers.
+    problem: Stale branch bases create avoidable rebase conflicts after implementation.
+    policy: Before spawning implementers, fetch origin/main and rebase the working branch onto it. Verify lint and tests pass on the synced branch before proceeding.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - "Before spawning implementers: fetch origin/main, rebase onto origin/main, verify lint and tests pass."
+      codex:
+        notes:
+          - Ensure the working branch is rebased onto the latest main and passes lint/tests before starting delegated work.
+
+  - id: AI-EXEC-004
+    status: active
+    category: execution
+    title: Restrict implementers to their assigned task only
+    summary: Worker prompts must limit each implementer to the one assigned task.
+    problem: Over-eager implementers can duplicate or conflict with tasks assigned to other workers.
+    policy: Spawn prompts must explicitly say the implementer should only implement the assigned task, even if other plan tasks are visible.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - "Append to every implementer spawn prompt: Only implement your assigned task. Do not work on tasks assigned to other agents."
+      codex:
+        notes:
+          - Include explicit scope restriction in each worker prompt limiting it to the single assigned task.
+
+  - id: AI-PLAN-001
+    status: active
+    category: planning
+    title: Pin exact shared type shapes in the plan
+    summary: Plans must pin exact shared type shapes before parallel work begins.
+    problem: Parallel tasks producing and consuming the same type stall on avoidable ambiguity.
+    policy: If parallel or sequential tasks share a type boundary, the plan must pin exact definitions, payloads, and method signatures consumed downstream.
+    applies_to:
+      phases: [subtask-planning, team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer, reviewer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Include exact definitions, payloads, and downstream-consumed methods for shared types before teammates start.
+      codex:
+        notes:
+          - Include exact type shapes in the plan and pass them into worker prompts unchanged.
+
+  - id: AI-PLAN-002
+    status: active
+    category: planning
+    title: Assign module scaffolding to the earliest task that needs compilation
+    summary: Module scaffolding belongs to the earliest task that needs it for compilation.
+    problem: Later-wave ownership of scaffold files causes repeated file ownership conflicts.
+    policy: Assign required module declarations or scaffold files to the earliest task that needs them, or create a dedicated setup task.
+    applies_to:
+      phases: [subtask-planning, team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Put scaffold file creation in the first task that needs it or add a setup task.
+      codex:
+        notes:
+          - Include scaffold files in the earliest owner task or make a separate setup task before parallel workers begin.
+
+  - id: AI-PLAN-003
+    status: active
+    category: planning
+    title: Plan cross-module visibility explicitly
+    summary: Plans must include export ownership when downstream tasks need a type across modules.
+    problem: Downstream tasks cannot use producer types if visibility changes are not assigned.
+    policy: When a type defined in one module must be consumed from another, include required visibility or export changes in the defining task.
+    applies_to:
+      phases: [subtask-planning]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - When downstream tasks need a type, assign required visibility changes to the task that defines the type.
+      codex:
+        notes:
+          - Include export ownership in the producer task whenever a downstream task needs that type across module boundaries.
+
+  - id: AI-PLAN-004
+    status: active
+    category: planning
+    title: Anticipate warning cascades when removing blanket suppressions
+    summary: Plans must account for warning cascades before removing blanket suppression attributes.
+    problem: Removing broad suppressions can surface warnings outside the current task ownership.
+    policy: If a task removes a broad dead-code or unused suppression, include ownership for likely follow-on warnings or defer the cleanup.
+    applies_to:
+      phases: [subtask-planning]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Include downstream files in ownership when removing blanket suppressions would expose new warnings.
+      codex:
+        notes:
+          - Plan ownership for follow-on warning cleanup before removing broad suppression attributes.
+
+  - id: AI-PLAN-005
+    status: active
+    category: planning
+    title: Mark unstable dependency APIs as guidance-only in plans
+    summary: Plans should not provide exact API pseudocode for alpha or unstable dependencies.
+    problem: Pseudocode for unstable dependencies can imply contracts that the actual package does not provide.
+    policy: When a plan references alpha, pre-1.0, or unstable dependencies, mark API examples as guidance-only and instruct implementers to verify against actual docs or source.
+    applies_to:
+      phases: [subtask-planning]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - For alpha or pre-1.0 dependencies, mark API examples as guidance only and require verification against current docs or source.
+      codex:
+        notes:
+          - Mark API examples for unstable dependencies as guidance and instruct workers to verify against package documentation.
+
+  - id: AI-TEST-001
+    status: active
+    category: testing
+    title: Clean every stateful backend in test setup
+    summary: Test setup must clean every stateful backend used by the app.
+    problem: Tests pass or fail depending on stale state left in auxiliary stores.
+    policy: Test setup and teardown must clean every stateful backend used by the app, not only the primary database.
+    applies_to:
+      phases: [subtask-planning, team-execution, epic-completion]
+      runtimes: [claude, codex]
+      roles: [lead, implementer, reviewer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Plan test infrastructure against every mutable backend the feature uses.
+      codex:
+        notes:
+          - Require test setup to reset all mutable backends touched by the feature under test.
+
+  - id: AI-TEST-002
+    status: active
+    category: testing
+    title: Use serial isolation for shared backend integration tests
+    summary: Shared-backend integration tests must use serial execution when they mutate shared state.
+    problem: Parallel integration tests against a shared backend can race and invalidate each other.
+    policy: Integration tests that mutate shared backend state must use serial execution controls when the harness shares backend instances.
+    applies_to:
+      phases: [subtask-planning, team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Use serial execution controls for integration tests that share mutable backend instances.
+      codex:
+        notes:
+          - Require serial execution controls for shared-backend integration tests that mutate state.
+
+  - id: AI-TEST-003
+    status: active
+    category: testing
+    title: Grep all construction call sites when adding connection-gating settings
+    summary: When adding a config field that gates a new connection attempt, protect all construction call sites.
+    problem: Test fixtures or secondary constructors can bypass the primary helper and still attempt external connections.
+    policy: When a task adds a new optional setting that triggers a connection attempt, search all state-construction paths and guard each one.
+    applies_to:
+      phases: [subtask-planning, team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - When adding connection-gating settings, search all state-construction call sites and guard each fixture.
+      codex:
+        notes:
+          - When adding a config field that gates a connection, search all state-construction paths in tests and guard each one.
+
+  - id: AI-VERIFY-001
+    status: active
+    category: verification
+    title: Defer lint until wave end for same-crate parallel work
+    summary: Same-compilation-unit parallel work may defer lint until the whole wave completes.
+    problem: Parallel tasks can temporarily fail unit-wide lint on files outside one worker's ownership.
+    policy: When multiple parallel tasks modify the same compilation unit, worker-level lint may be deferred until the wave completes while formatting and owned tests still run per task.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer, reviewer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Let affected implementers defer lint only when failures are outside ownership, then verify lint after the wave completes.
+      codex:
+        notes:
+          - In parallel same-unit waves, defer lint to the lead after all workers finish if failures are caused by unowned files.
+
+  - id: AI-CLEANUP-001
+    status: active
+    category: cleanup
+    title: Remove temporary dead-code suppressions after downstream consumers exist
+    summary: Remove temporary dead-code suppressions after downstream consumers exist.
+    problem: Temporary suppressions added for intermediate waves are easy to leave behind.
+    policy: Any temporary dead-code or unused suppression added to unblock an earlier wave must be reviewed and removed after downstream consumers are wired in.
+    applies_to:
+      phases: [team-execution, epic-completion]
+      runtimes: [claude, codex]
+      roles: [lead, implementer, reviewer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Add a post-wave cleanup check for temporary dead-code and unused suppressions.
+      codex:
+        notes:
+          - After downstream wiring lands, search for temporary suppression annotations and remove any no longer required.
+
+  - id: AI-STATE-001
+    status: active
+    category: state
+    title: Prefer atomic state transitions over check-then-act flows
+    summary: Plans should prefer atomic operations over check-then-act patterns for shared mutable state.
+    problem: Separate existence checks and mutation steps can introduce races under contention.
+    policy: When the system manages shared mutable state, prefer atomic operations that both check and mutate state in one backend round trip.
+    applies_to:
+      phases: [subtask-planning, team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Prefer one-step atomic mutations for contended shared state.
+      codex:
+        notes:
+          - Prefer one-step atomic mutations when multiple requests may contend on the same key, row, or flag.

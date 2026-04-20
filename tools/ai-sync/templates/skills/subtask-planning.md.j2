@@ -1,0 +1,86 @@
+{{ skill_frontmatter(
+  name="subtask-planning",
+  description=descriptions["subtask-planning"],
+  argument_hint="<subtask-ticket-id>",
+  allow_implicit_invocation=false
+) }}
+
+{{ generated_notice }}
+
+# Subtask Planning
+
+Break subtask {{ vocab.ticket }} `$ARGUMENTS` into parallelizable implementation tasks.
+
+Core principle: each implementation task owns specific files, carries requirement IDs, and is tagged with complexity. No file ownership overlap.
+
+## Fetch The Subtask
+
+{{ cmd("ticket_fetch", id="<validated ticket id>") }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("ticket_fetch") }}
+
+Run each argv array directly through the runtime's structured command mechanism. Preserve one argv element per rendered token.
+
+## Process
+
+1. Read the subtask {{ vocab.ticket }}. Extract requirement IDs, design references, and dependencies.
+2. Read the relevant design doc sections and current code patterns.
+3. Split work into small implementation tasks with no file ownership overlap.
+4. Pin exact shared type shapes when one task produces a type another task consumes.
+5. Build the dependency graph and identify peak parallelism.
+6. Write teammate-ready task specs to `docs/plans/YYYY-MM-DD-<name>-<subtask-slug>.md`.
+7. Commit the plan file.
+
+## Planning Rules
+
+{{ registry_rules_for("subtask-planning") }}
+
+## Complexity Tags
+
+Standard tasks: migrations, type definitions, simple CRUD, boilerplate tests, config files.
+
+Complex tasks: security-sensitive code, business logic with edge cases, state management, integrations, or nuanced error handling.
+
+## Plan File Shape
+
+```markdown
+# <Subtask Name> - Implementation Plan
+
+**Subtask {{ vocab.ticket }}:** <validated ticket id>
+**Epic:** <parent ticket id>
+**Design doc:** `docs/plans/<design-doc>.md`
+
+## Team Configuration
+- Implementer teammates: <N>
+- Spec reviewer: 1
+
+## Dependency Graph
+<what blocks what>
+
+## Implementation Tasks
+
+### Task 1: <name>
+
+**Complexity:** standard | complex
+**Implementer:** implementer-standard | implementer-complex
+**Requirement IDs:**
+- REQ-ID: assertion
+
+**Files owned:**
+- `path/to/file` (create or modify)
+
+**Files to read only:**
+- `path/to/context`
+
+**Dependencies:**
+- None | blocked by Task N
+
+**Acceptance criteria:**
+- [ ] REQ-ID has a specific test and implementation
+```
+
+## Handoff
+
+Report the plan path, task count, peak parallelism, and first unblocked tasks. Suggest `team-execution <plan-file>`.

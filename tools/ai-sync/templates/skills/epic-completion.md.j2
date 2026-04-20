@@ -1,0 +1,73 @@
+{{ skill_frontmatter(
+  name="epic-completion",
+  description=descriptions["epic-completion"],
+  argument_hint="<epic-ticket-id>",
+  allow_implicit_invocation=false
+) }}
+
+{{ generated_notice }}
+
+# Epic Completion
+
+Audit final implementation for epic {{ vocab.ticket }} `$ARGUMENTS` after all subtask review artifacts are merged or accepted.
+
+Core principle: a checked box on a {{ vocab.ticket }} does not prove behavior. Read actual code and tests against the spec.
+
+## Fetch The Epic
+
+{{ cmd("ticket_fetch", id="<validated ticket id>") }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("ticket_fetch") }}
+
+Run each argv array directly through the runtime's structured command mechanism. Preserve one argv element per rendered token.
+
+## Process
+
+1. Read the design doc Requirements Summary.
+2. Verify every requirement ID is assigned to one subtask {{ vocab.ticket }}.
+3. Verify every subtask review artifact is merged or accepted.
+4. Read implementation code and tests for each requirement ID.
+5. Run the full test suite.
+6. Check integration wiring and remove leftover scaffolding or temporary suppressions.
+7. Aggregate `.agent-skills/retro-notes.md` into an epic-level retro summary.
+
+## Durable Rules To Recheck
+
+{{ registry_rules_for("epic-completion") }}
+
+## Completion Comment
+
+Write the completion body to a path matching `body_file_path`, then comment:
+
+{{ cmd("ticket_comment", id="<validated ticket id>", body_file="<validated body file path>") }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("ticket_comment") }}
+
+Then close the epic:
+
+{{ cmd("ticket_close", id="<validated ticket id>") }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("ticket_close") }}
+
+## Completion Body Shape
+
+```markdown
+## Completed
+
+**Delivered:** <summary>
+**Review artifacts:** <links or ticket references>
+**Spec amendments:** <count and summary, or none>
+**Retro:** `.agent-skills/retro-notes.md`
+
+All requirement IDs verified against implementation.
+```
+
+## Handoff
+
+Report requirement audit results, test commands run, retro findings, and the closed epic {{ vocab.ticket }}.

@@ -1,0 +1,13 @@
+policy:
+  allow_implicit_invocation: false
+dependencies:
+{% if skill_name.startswith("adversarial-") %}
+  mcp_servers:
+    - id: {{ runtime_config.reviewer.bundled_mcp_server.id }}
+      command: {{ runtime_config.reviewer.bundled_mcp_server.command | tojson }}
+      bundled: {{ runtime_config.reviewer.bundled_mcp_server.verified_for_plugin_bundle | lower }}
+  setup:
+    - {{ runtime_config.reviewer.install_prerequisite | trim | tojson }}
+{% else %}
+  mcp_servers: []
+{% endif %}

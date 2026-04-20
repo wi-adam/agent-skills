@@ -1,0 +1,103 @@
+{{ skill_frontmatter(
+  name="team-execution",
+  description=descriptions["team-execution"],
+  argument_hint="<plan-file-path>",
+  allow_implicit_invocation=false
+) }}
+
+{{ generated_notice }}
+
+# Team Execution
+
+Execute the implementation plan at `$ARGUMENTS` using delegated workers, spec compliance review, quality gates, and live improvement capture.
+
+Core principle: every requirement ID must be implemented exactly as specified and verified against actual code.
+
+## Start Conditions
+
+1. Read the plan file.
+2. Fetch and rebase the working branch onto the latest main.
+3. Verify the project lint and test commands pass before starting delegated work.
+
+## Delegation
+
+{% if runtime == "claude" %}
+Use Claude teammates from this plugin:
+
+- `implementer-standard`
+- `implementer-complex`
+- `spec-reviewer`
+
+Spawn example:
+
+```text
+{{ teammate.spawn_example }}
+```
+{% else %}
+Codex subagents are available only when the user explicitly asks for delegated or parallel agent work. When delegation is requested, spawn workers matching peak parallelism and give each worker a self-contained prompt with owned files, requirement IDs, and acceptance checks.
+
+{{ teammate.spawn_example }}
+{% endif %}
+
+## Delegation Rules
+
+{{ registry_rules_for("team-execution", categories=["execution"]) }}
+
+## Standing Rules
+
+{{ registry_rules_for("team-execution", categories=["planning", "testing", "verification", "cleanup", "state"]) }}
+
+## Quality Gates
+
+When a worker reports completion:
+
+1. Verify only owned files changed.
+2. Verify tests exist for every assigned requirement ID.
+3. Run focused tests for the touched behavior.
+4. Ask the spec reviewer to inspect actual code, not the worker report.
+5. Reject and reassign fixes until the reviewer approves.
+
+## Spec Amendment Flow
+
+If the plan or design doc conflicts with implementation reality:
+
+1. Stop the affected work.
+2. Surface the requirement ID, current spec text, discovered issue, and proposed change to the user.
+3. Apply the user's decision to the design doc and plan.
+4. Broadcast the amendment to affected workers.
+
+Never silently change the spec.
+
+## Publish For Review
+
+{{ vocab.review_action_sentence }}.
+
+Generate the review body first:
+
+{{ fmt("review_body", title="<plan title>", summary="<implementation summary>", linked_ticket_ids=["<validated ticket id>", "..."], branch_ref="<validated current branch>") }}
+
+Write the rendered body to a path matching `body_file_path`, then run:
+
+{{ cmd("work_publish", title="<validated review title>", body_file="<validated body file path>", linked_ticket_ids=["<validated ticket id>", "..."]) }}
+
+Before using values, normalize and validate each argument:
+
+{{ validation_instructions_for("work_publish") }}
+
+Run each argv array directly through the runtime's structured command mechanism. Preserve one argv element per rendered token.
+
+## Retro Capture
+
+Append execution notes to `.agent-skills/retro-notes.md` in the consumer project:
+
+- timestamp and subtask reference
+- task duration and reviewer rejection count
+- spec amendments
+- repeated friction points
+- candidate durable process improvements
+
+Do not edit this marketplace repository while executing a consumer project workflow.
+
+## Handoff
+
+Report the review artifact, linked {{ vocab.tickets }}, verification commands run, and `.agent-skills/retro-notes.md` location.
