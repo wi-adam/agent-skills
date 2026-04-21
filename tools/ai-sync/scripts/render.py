@@ -533,7 +533,6 @@ def reviewer_call_recipe(runtime: str, runtime_config: dict[str, Any], kind: str
                 "",
                 "- `prompt`: the review prompt with concrete scope and context",
                 "- `cwd`: project root",
-                "- `sandbox`: `read-only`",
                 "",
                 f"Save the returned `threadId`. Continue follow-up rounds with `{reviewer['reply_tool_name']}` using that `threadId`.",
             ]

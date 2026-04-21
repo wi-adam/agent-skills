@@ -9,7 +9,7 @@ reviewer:
 
     Restart Claude Code after adding the server.
   mechanism: |
-    Invoke the MCP tool named `codex` with `prompt`, `cwd`, and `sandbox`.
+    Invoke the MCP tool named `codex` with `prompt` and `cwd`.
     Save the returned `threadId` and use `codex-reply` for follow-up rounds.
   tool_name: codex
   reply_tool_name: codex-reply

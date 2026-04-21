@@ -8,7 +8,7 @@ marketplace:
   homepage: https://github.com/wi-adam/agent-skills
   repository: https://github.com/wi-adam/agent-skills
   license: MIT
-  version: 0.1.0
+  version: 0.1.1
 
 plugins:
   - id: epic-workflow

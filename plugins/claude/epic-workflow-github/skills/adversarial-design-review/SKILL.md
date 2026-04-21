@@ -21,7 +21,7 @@ Install and authenticate Codex locally. Add Codex as an MCP server in Claude Cod
 
 Restart Claude Code after adding the server.
 
-Invoke the MCP tool named `codex` with `prompt`, `cwd`, and `sandbox`.
+Invoke the MCP tool named `codex` with `prompt` and `cwd`.
 Save the returned `threadId` and use `codex-reply` for follow-up rounds.
 
 ## Gather Material
@@ -68,7 +68,6 @@ Invoke MCP tool `codex`:
 
 - `prompt`: the review prompt with concrete scope and context
 - `cwd`: project root
-- `sandbox`: `read-only`
 
 Save the returned `threadId`. Continue follow-up rounds with `codex-reply` using that `threadId`.
 
