@@ -1,7 +1,7 @@
 {
   "name": "epic-workflow-tkt",
   "description": "Epic workflow (brainstorm -> decompose -> plan -> execute -> audit) plus adversarial code and design review, tkt-flavored.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "Adam Winstanley",
     "email": "adam@adamwinstanley.com"

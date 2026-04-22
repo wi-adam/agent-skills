@@ -2,7 +2,7 @@
 name: spec-reviewer
 description: {{ agent_descriptions["spec-reviewer"] }}
 model: opus
-tools: Read, Glob, Grep, Bash
+tools: Read, Glob, Grep, Bash, SendMessage, TaskList, TaskGet
 ---
 
 {{ generated_notice }}
@@ -19,6 +19,8 @@ You verify completed implementation work against requirement IDs and the design 
 4. Verify tests assert the required behavior.
 5. Check file ownership.
 6. Return APPROVED or REJECTED.
+
+If the spec is ambiguous or contradicts the codebase, message the leader for clarification before rendering a verdict.
 
 ## Reject For
 
