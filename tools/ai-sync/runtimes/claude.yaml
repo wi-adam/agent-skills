@@ -9,7 +9,8 @@ reviewer:
 
     Restart Claude Code after adding the server.
   mechanism: |
-    Invoke the MCP tool named `codex` with `prompt` and `cwd`.
+    Invoke the MCP tool named `codex` with only `prompt` and `cwd`.
+    Do not pass `sandbox` or `approval-policy`; those come from the user's Codex configuration.
     Save the returned `threadId` and use `codex-reply` for follow-up rounds.
   tool_name: codex
   reply_tool_name: codex-reply

@@ -21,7 +21,8 @@ Install and authenticate Codex locally. Add Codex as an MCP server in Claude Cod
 
 Restart Claude Code after adding the server.
 
-Invoke the MCP tool named `codex` with `prompt` and `cwd`.
+Invoke the MCP tool named `codex` with only `prompt` and `cwd`.
+Do not pass `sandbox` or `approval-policy`; those come from the user's Codex configuration.
 Save the returned `threadId` and use `codex-reply` for follow-up rounds.
 
 ## Determine Scope
@@ -72,6 +73,8 @@ Invoke MCP tool `codex`:
 
 - `prompt`: the review prompt with concrete scope and context
 - `cwd`: project root
+
+Do not pass `sandbox` or `approval-policy`. Leave them unset so Codex uses the user's configured defaults; overriding them breaks nested-sandbox environments.
 
 Save the returned `threadId`. Continue follow-up rounds with `codex-reply` using that `threadId`.
 

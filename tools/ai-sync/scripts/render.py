@@ -534,6 +534,8 @@ def reviewer_call_recipe(runtime: str, runtime_config: dict[str, Any], kind: str
                 "- `prompt`: the review prompt with concrete scope and context",
                 "- `cwd`: project root",
                 "",
+                "Do not pass `sandbox` or `approval-policy`. Leave them unset so Codex uses the user's configured defaults; overriding them breaks nested-sandbox environments.",
+                "",
                 f"Save the returned `threadId`. Continue follow-up rounds with `{reviewer['reply_tool_name']}` using that `threadId`.",
             ]
         )
