@@ -21,8 +21,11 @@ reviewer:
 
 teammate:
   mechanism: Agent + SendMessage (built-in)
-  spawn_example: 'Agent(subagent_type="implementer-standard", prompt="...")'
-  message_example: 'SendMessage(to="<teammate-name>", prompt="...")'
+  spawn_example: 'Agent(subagent_type="implementer-standard", name="impl-1", prompt="...")'
+  message_example: 'SendMessage(to="impl-1", prompt="...")'
   notes: |
     Implementer and reviewer agent definitions ship with the Claude plugin in `agents/`.
-    Reference them by name through `subagent_type`.
+    Reference them by name through `subagent_type`. Always pass a stable `name`
+    (for example `impl-1`, `impl-2`, `reviewer-1`) at spawn time so SendMessage can
+    address the teammate later. Without `name`, the agent is anonymous and
+    cannot be reused for later waves.

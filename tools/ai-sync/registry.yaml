@@ -8,7 +8,7 @@ marketplace:
   homepage: https://github.com/wi-adam/agent-skills
   repository: https://github.com/wi-adam/agent-skills
   license: MIT
-  version: 0.1.3
+  version: 0.1.4
 
 plugins:
   - id: epic-workflow
@@ -124,6 +124,46 @@ improvements:
       codex:
         notes:
           - Include explicit scope restriction in each worker prompt limiting it to the single assigned task.
+
+  - id: AI-EXEC-005
+    status: active
+    category: execution
+    title: Require an explicit completion handshake from teammates
+    summary: A teammate is done when it sends a completion message to the lead, not when its commit lands.
+    problem: Without a completion handshake, an idle teammate is indistinguishable from a blocked one and the lead loses track of which slots are reusable.
+    policy: Worker prompts must require an explicit completion message to the lead containing the commit SHA, files touched, and verification output. A teammate that is idle without sending that message is treated as blocked, not done.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - "Append to every implementer spawn prompt: Your task is not complete when the commit lands. It is complete when you SendMessage the lead with commit SHA, files touched, and verification output. Idle before that message means blocked."
+      codex:
+        notes:
+          - "Append to every worker prompt: completion is a message to the lead with commit SHA, files touched, and verification output, not the commit itself. An idle worker without that message is blocked, not done."
+
+  - id: AI-EXEC-006
+    status: active
+    category: execution
+    title: Stage with explicit paths only in shared worktrees
+    summary: Forbid blanket staging in worker prompts so peers' in-flight work is not swept up.
+    problem: Workers may share a working tree. git add -A, git add ., git add -u, git commit -a, and glob adds will stage another worker's in-flight changes and produce mixed commits.
+    policy: Worker prompts must require explicit-path staging only and forbid git add -A, git add ., git add -u, git commit -a, and glob-style adds.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead, implementer]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - "Append to every implementer spawn prompt: Stage with explicit paths only. Never use git add -A, git add ., git add -u, git commit -a, or glob-style adds. The worktree may be shared with peer implementers and blanket staging sweeps up their in-flight work."
+      codex:
+        notes:
+          - "Require workers to stage with explicit paths only. Forbid git add -A, git add ., git add -u, git commit -a, and glob-style adds because the worktree may be shared with peers."
 
   - id: AI-PLAN-001
     status: active
@@ -304,6 +344,26 @@ improvements:
       codex:
         notes:
           - In parallel same-unit waves, defer lint to the lead after all workers finish if failures are caused by unowned files.
+
+  - id: AI-VERIFY-002
+    status: active
+    category: verification
+    title: Run cross-model adversarial review before opening the PR
+    summary: Every subtask must run the cross-model adversarial reviewer before the PR opens.
+    problem: Single-model reviews miss systemic issues that surface only under an independent model with different priors.
+    policy: Before opening the PR for a subtask, run the adversarial-code-review skill against the cross-model reviewer. Findings either land as on-branch fixes or are documented as accepted follow-ups in the PR body. Do not open the PR until the adversarial review has run.
+    applies_to:
+      phases: [team-execution]
+      runtimes: [claude, codex]
+      roles: [lead]
+    source_retro: []
+    runtime_mapping:
+      claude:
+        notes:
+          - Run the adversarial-code-review skill (Codex MCP reviewer) before opening the PR. Land findings on-branch as fixes or document accepted follow-ups in the PR body.
+      codex:
+        notes:
+          - Run the adversarial-code-review skill (Claude Code MCP reviewer) before opening the PR. Land findings on-branch as fixes or document accepted follow-ups in the PR body.
 
   - id: AI-CLEANUP-001
     status: active

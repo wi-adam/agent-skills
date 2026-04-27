@@ -14,6 +14,8 @@ Consumer projects should capture raw execution notes in `.agent-skills/retro-not
 | `AI-EXEC-002` | execution | Spawn implementers matching peak parallelism once, then reuse them for later waves. |
 | `AI-EXEC-003` | execution | Fetch and rebase onto main before spawning implementers. |
 | `AI-EXEC-004` | execution | Worker prompts must limit each implementer to the one assigned task. |
+| `AI-EXEC-005` | execution | A teammate is done when it sends a completion message to the lead, not when its commit lands. |
+| `AI-EXEC-006` | execution | Forbid blanket staging in worker prompts so peers' in-flight work is not swept up. |
 | `AI-PLAN-001` | planning | Plans must pin exact shared type shapes before parallel work begins. |
 | `AI-PLAN-002` | planning | Module scaffolding belongs to the earliest task that needs it for compilation. |
 | `AI-PLAN-003` | planning | Plans must include export ownership when downstream tasks need a type across modules. |
@@ -23,6 +25,7 @@ Consumer projects should capture raw execution notes in `.agent-skills/retro-not
 | `AI-TEST-002` | testing | Shared-backend integration tests must use serial execution when they mutate shared state. |
 | `AI-TEST-003` | testing | When adding a config field that gates a new connection attempt, protect all construction call sites. |
 | `AI-VERIFY-001` | verification | Same-compilation-unit parallel work may defer lint until the whole wave completes. |
+| `AI-VERIFY-002` | verification | Every subtask must run the cross-model adversarial reviewer before the PR opens. |
 | `AI-CLEANUP-001` | cleanup | Remove temporary dead-code suppressions after downstream consumers exist. |
 | `AI-STATE-001` | state | Plans should prefer atomic operations over check-then-act patterns for shared mutable state. |
 
@@ -67,6 +70,26 @@ Consumer projects should capture raw execution notes in `.agent-skills/retro-not
 **Runtime notes:**
 - `claude`: Append to every implementer spawn prompt: Only implement your assigned task. Do not work on tasks assigned to other agents.
 - `codex`: Include explicit scope restriction in each worker prompt limiting it to the single assigned task.
+
+### AI-EXEC-005 - Require an explicit completion handshake from teammates
+
+**Category:** execution
+
+**Policy:** Worker prompts must require an explicit completion message to the lead containing the commit SHA, files touched, and verification output. A teammate that is idle without sending that message is treated as blocked, not done.
+
+**Runtime notes:**
+- `claude`: Append to every implementer spawn prompt: Your task is not complete when the commit lands. It is complete when you SendMessage the lead with commit SHA, files touched, and verification output. Idle before that message means blocked.
+- `codex`: Append to every worker prompt: completion is a message to the lead with commit SHA, files touched, and verification output, not the commit itself. An idle worker without that message is blocked, not done.
+
+### AI-EXEC-006 - Stage with explicit paths only in shared worktrees
+
+**Category:** execution
+
+**Policy:** Worker prompts must require explicit-path staging only and forbid git add -A, git add ., git add -u, git commit -a, and glob-style adds.
+
+**Runtime notes:**
+- `claude`: Append to every implementer spawn prompt: Stage with explicit paths only. Never use git add -A, git add ., git add -u, git commit -a, or glob-style adds. The worktree may be shared with peer implementers and blanket staging sweeps up their in-flight work.
+- `codex`: Require workers to stage with explicit paths only. Forbid git add -A, git add ., git add -u, git commit -a, and glob-style adds because the worktree may be shared with peers.
 
 ### AI-PLAN-001 - Pin exact shared type shapes in the plan
 
@@ -157,6 +180,16 @@ Consumer projects should capture raw execution notes in `.agent-skills/retro-not
 **Runtime notes:**
 - `claude`: Let affected implementers defer lint only when failures are outside ownership, then verify lint after the wave completes.
 - `codex`: In parallel same-unit waves, defer lint to the lead after all workers finish if failures are caused by unowned files.
+
+### AI-VERIFY-002 - Run cross-model adversarial review before opening the PR
+
+**Category:** verification
+
+**Policy:** Before opening the PR for a subtask, run the adversarial-code-review skill against the cross-model reviewer. Findings either land as on-branch fixes or are documented as accepted follow-ups in the PR body. Do not open the PR until the adversarial review has run.
+
+**Runtime notes:**
+- `claude`: Run the adversarial-code-review skill (Codex MCP reviewer) before opening the PR. Land findings on-branch as fixes or document accepted follow-ups in the PR body.
+- `codex`: Run the adversarial-code-review skill (Claude Code MCP reviewer) before opening the PR. Land findings on-branch as fixes or document accepted follow-ups in the PR body.
 
 ### AI-CLEANUP-001 - Remove temporary dead-code suppressions after downstream consumers exist
 

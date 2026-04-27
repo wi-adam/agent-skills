@@ -7,32 +7,69 @@ description: "Execute a subtask plan with delegated workers, spec review, qualit
 
 # Team Execution
 
-Execute the implementation plan at `$ARGUMENTS` using delegated workers, spec compliance review, quality gates, and live improvement capture.
+Execute the implementation plan at `$ARGUMENTS` using a delegated agent team with spec compliance enforcement, quality gates, and live improvement capture.
 
-Core principle: every requirement ID must be implemented exactly as specified and verified against actual code.
+**Core principle:** parallel execution with belt-and-suspenders spec compliance. Every requirement ID must be implemented exactly as specified, verified by both the implementer and a dedicated reviewer.
 
-## Start Conditions
+## Inputs
 
-1. Read the plan file.
-2. Fetch and rebase the working branch onto the latest main.
-3. Verify the project lint and test commands pass before starting delegated work.
+- Plan file from subtask-planning (with implementation tasks, file ownership, dependency graph, teammate specs).
 
-## Delegation
+## Process
 
-Codex subagents are available only when the user explicitly asks for delegated or parallel agent work. When delegation is requested, spawn workers matching peak parallelism and give each worker a self-contained prompt with owned files, requirement IDs, and acceptance checks.
+### 0. Sync With Main
 
-Ask Codex to spawn delegated workers only when the user explicitly requests delegation.
-Include owned files, requirement IDs, acceptance checks, and the spec amendment stop rule.
+Before any implementation begins, ensure the working branch is up to date:
+
+1. `git fetch origin main`.
+2. If on an existing branch: `git rebase origin/main`. Abort and surface conflicts to the user if they arise.
+3. If starting fresh: create the branch from `origin/main`.
+4. Verify the project's lint and test commands pass on the synced branch before spawning teammates.
+
+This prevents rebase pain after implementation and ensures teammates work against current code.
+
+### 1. Create the Agent Team
+
+Read the plan file. Analyze the dependency graph to determine **peak parallelism** (the maximum number of tasks running concurrently in any wave). Form the team in advance — this is the load-bearing step that lets later waves reuse teammates instead of spawning fresh agents.
+
+Form the worker roster:
+
+- **Implementer workers.** Spawn exactly `N` delegated workers, where `N` = peak parallelism, one per concurrent slot. Each worker gets a self-contained prompt with owned files, requirement IDs, acceptance checks, the spec amendment stop rule, and the verification footer below.
+- **Reviewer.** Route reviewer prompts through the cross-model adversarial reviewer (see `adversarial-code-review` in this plugin). Run the reviewer once per task completion, not as a long-lived worker.
+
+Reuse across waves: when a worker finishes a task, reassign the next unblocked task to that same worker. **Do not spawn additional workers for later-wave tasks.** If a slot finishes early and another is still busy, wait — do not spawn a replacement.
+
+Verification footer to append to every implementer spawn prompt:
+
+```
+**Before reporting completion, you MUST verify:**
+1. The project's formatter passes on every file you touched.
+2. The project's linter passes with no warnings on every file you touched.
+3. The full test suite passes.
+4. Commit your changes with a descriptive message referencing the task ID.
+```
 
 
-## Delegation Rules
+Approved execution rules:
 
 - `[execution]` `AI-EXEC-001` Spawn delegated worker and reviewer agents without user-input-gating patterns.
 - `[execution]` `AI-EXEC-002` Spawn workers matching peak parallelism, then reassign idle workers to later tasks instead of creating new workers.
 - `[execution]` `AI-EXEC-003` Ensure the working branch is rebased onto the latest main and passes lint/tests before starting delegated work.
 - `[execution]` `AI-EXEC-004` Include explicit scope restriction in each worker prompt limiting it to the single assigned task.
+- `[execution]` `AI-EXEC-005` Append to every worker prompt: completion is a message to the lead with commit SHA, files touched, and verification output, not the commit itself. An idle worker without that message is blocked, not done.
+- `[execution]` `AI-EXEC-006` Require workers to stage with explicit paths only. Forbid git add -A, git add ., git add -u, git commit -a, and glob-style adds because the worktree may be shared with peers.
 
-## Standing Rules
+### 2. Execute in Dependency Order
+
+- Tasks with no dependencies start immediately.
+- As tasks complete and pass review, blocked tasks unblock.
+- The lead monitors progress via the shared task list.
+
+**Do NOT start implementing tasks yourself.** Wait for teammates to complete their work. Only intervene if a teammate is stuck or needs guidance.
+
+### Standing Rules
+
+These apply to every execution. The lead should verify these when reviewing the plan and enforce them during execution.
 
 - `[planning]` `AI-PLAN-001` Include exact type shapes in the plan and pass them into worker prompts unchanged.
 - `[planning]` `AI-PLAN-002` Include scaffold files in the earliest owner task or make a separate setup task before parallel workers begin.
@@ -40,33 +77,56 @@ Include owned files, requirement IDs, acceptance checks, and the spec amendment 
 - `[testing]` `AI-TEST-002` Require serial execution controls for shared-backend integration tests that mutate state.
 - `[testing]` `AI-TEST-003` When adding a config field that gates a connection, search all state-construction paths in tests and guard each one.
 - `[verification]` `AI-VERIFY-001` In parallel same-unit waves, defer lint to the lead after all workers finish if failures are caused by unowned files.
+- `[verification]` `AI-VERIFY-002` Run the adversarial-code-review skill (Claude Code MCP reviewer) before opening the PR. Land findings on-branch as fixes or document accepted follow-ups in the PR body.
 - `[cleanup]` `AI-CLEANUP-001` After downstream wiring lands, search for temporary suppression annotations and remove any no longer required.
 - `[state]` `AI-STATE-001` Prefer one-step atomic mutations when multiple requests may contend on the same key, row, or flag.
 
-## Quality Gates
+### 3. Quality Gates
 
-When a worker reports completion:
+When a teammate reports a task complete:
 
-1. Verify only owned files changed.
-2. Verify tests exist for every assigned requirement ID.
-3. Run focused tests for the touched behavior.
-4. Ask the spec reviewer to inspect actual code, not the worker report.
-5. Reject and reassign fixes until the reviewer approves.
+1. **Mechanical checks** (lead verifies):
+   - Tests exist for modified files.
+   - Tests pass.
+   - Format and lint pass on touched files (defer lint to wave end if covered by `AI-VERIFY-001`).
+   - Only files in the ownership list were modified.
+   - All requirement IDs from the task spec appear in test names or assertions.
+   - After a wave completes: search for temporary dead-code or unused-symbol suppressions added during this execution and remove any that are no longer needed.
+2. **Spec review** (reviewer):
+   - Reads actual code, not the implementer's report.
+   - Compares to requirement IDs line by line.
+   - Checks for silent simplification, missing requirements, or extra behavior.
+   - Renders APPROVED or REJECTED with line-level findings.
+3. **If rejected**: implementer fixes issues, reviewer re-reviews. Repeat until approved.
 
-## Spec Amendment Flow
+### 4. Spec Amendment Flow
 
 If the plan or design doc conflicts with implementation reality:
 
 1. Stop the affected work.
-2. Surface the requirement ID, current spec text, discovered issue, and proposed change to the user.
+2. Surface to the user: requirement ID, current spec text, discovered issue, and proposed change.
 3. Apply the user's decision to the design doc and plan.
-4. Broadcast the amendment to affected workers.
+4. Broadcast the amendment to affected teammates.
 
 Never silently change the spec.
 
-## Publish For Review
+### 5. Live Improvement Capture
 
-Open a pull request.
+Track throughout execution:
+
+- **Explicit interventions.** User or lead correcting an approach, rejected plans or implementations, clarifications needed.
+- **Friction points.** Teammate took significantly longer than expected, repeated test failures before passing, multiple clarifying questions, rework after reviewer rejection, teammate stuck (spinning without progress).
+- **Gaps.** Ambiguous spec or plan requiring assumptions, missing information in teammate spawn prompts, dependency issues not anticipated in planning.
+
+For each item: what happened, why, and a concrete suggestion for improvement.
+
+### 6. Completion
+
+When all tasks are approved by the reviewer:
+
+1. Run the full test suite — not just individual task tests.
+2. Run the `adversarial-code-review` skill before publishing for review (see `AI-VERIFY-002`). Land findings on-branch as fixes or document accepted follow-ups in the review body.
+3. Open a pull request.
 
 Generate the review body first:
 
@@ -100,18 +160,25 @@ Before using values, normalize and validate each argument:
 
 Run each argv array directly through the runtime's structured command mechanism. Preserve one argv element per rendered token.
 
-## Retro Capture
-
-Append execution notes to `.agent-skills/retro-notes.md` in the consumer project:
-
-- timestamp and subtask reference
-- task duration and reviewer rejection count
-- spec amendments
-- repeated friction points
-- candidate durable process improvements
+4. Append execution notes to `.agent-skills/retro-notes.md` in the consumer project:
+   - timestamp and subtask reference
+   - task duration and reviewer rejection count
+   - spec amendments
+   - repeated friction points
+   - candidate durable process improvements
+5. Clean up the team — release teammate slots once the review is published.
 
 Do not edit this marketplace repository while executing a consumer project workflow.
 
 ## Handoff
 
 Report the review artifact, linked issues, verification commands run, and `.agent-skills/retro-notes.md` location.
+
+## Red Flags — STOP
+
+- Lead starts implementing instead of delegating — wait for teammates.
+- Teammate modifies files outside ownership — reject and fix.
+- Spec discrepancy handled without user approval — revert and follow the amendment flow.
+- Reviewer approving without reading code — re-review.
+- All teammates idle but tasks remain — check for stuck dependencies.
+- Lead spawns a new agent for a later wave instead of reusing an idle teammate — stop and reassign the existing slot.
