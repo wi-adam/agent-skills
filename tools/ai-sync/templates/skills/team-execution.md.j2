@@ -35,18 +35,31 @@ This prevents rebase pain after implementation and ensures teammates work agains
 Read the plan file. Analyze the dependency graph to determine **peak parallelism** (the maximum number of tasks running concurrently in any wave). Form the team in advance — this is the load-bearing step that lets later waves reuse teammates instead of spawning fresh agents.
 
 {% if runtime == "claude" %}
-Spawn the team:
+**Step 1a — Create the team container with `TeamCreate`.** Before spawning any teammate, you MUST call the `TeamCreate` tool. This is the load-bearing step that turns a set of agents into a coordinated team with a shared task list. Without it, agents spawned below run as anonymous one-shots and cannot reliably coordinate, and `SendMessage` routing is unreliable.
 
-- **Implementer slots.** Spawn exactly `N` implementers, where `N` = peak parallelism. Each spawn MUST pass a stable `name` (`impl-1`, `impl-2`, ..., `impl-N`) so `SendMessage` can address it later. Without `name`, the teammate is anonymous and cannot be reused. Pick the `subagent_type` matching the first task's complexity:
+```text
+TeamCreate(
+  team_name="<short-kebab-case-team-name>",
+  agent_type="team-lead",
+  description="Implementing <subtask title> from <plan-file>"
+)
+```
+
+Pick a `team_name` derived from the subtask (e.g. `auth-rewrite-team`). Remember the chosen `team_name` — every subsequent `Agent` spawn MUST pass it, and the final `TeamDelete` cleanup uses the current team context implicitly.
+
+**Step 1b — Spawn the team.**
+
+- **Implementer slots.** Spawn exactly `N` implementers, where `N` = peak parallelism. Each spawn MUST pass a stable `name` (`impl-1`, `impl-2`, ..., `impl-N`) and the `team_name` from Step 1a. Without `name`, the teammate is anonymous and cannot be reused; without `team_name`, the teammate does not join the shared task list and coordination breaks. Pick the `subagent_type` matching the first task's complexity:
   - `implementer-standard` for tasks tagged `standard`.
   - `implementer-complex` for tasks tagged `complex`.
-- **Reviewer slot.** Spawn exactly one teammate of `subagent_type="spec-reviewer"` with `name="reviewer-1"`.
+- **Reviewer slot.** Spawn exactly one teammate of `subagent_type="spec-reviewer"` with `name="reviewer-1"` and the same `team_name`.
 
 Spawn shape for each implementer:
 
 ```text
 Agent(
   subagent_type="implementer-standard",
+  team_name="<team-name from Step 1a>",
   name="impl-1",
   prompt="<task spec from the plan + verification footer>"
 )
@@ -57,10 +70,13 @@ Spawn shape for the reviewer:
 ```text
 Agent(
   subagent_type="spec-reviewer",
+  team_name="<team-name from Step 1a>",
   name="reviewer-1",
   prompt="<reviewer prompt below>"
 )
 ```
+
+Spawn all teammates in parallel (one assistant turn, multiple `Agent` tool calls in the same response) so the team is fully formed before Wave 1 starts.
 
 Reuse across waves: when a teammate finishes a task, dispatch the next unblocked task to that same slot via `SendMessage(to="impl-K", prompt="...")`. **Do NOT spawn a new agent for later-wave tasks.** If a `standard` slot is the only one idle and the next task is `complex` (or vice versa), prefer reusing the idle slot over spawning a new one — the cold-start cost outweighs the model mismatch.
 {% else %}
@@ -179,7 +195,14 @@ Run each argv array directly through the runtime's structured command mechanism.
    - spec amendments
    - repeated friction points
    - candidate durable process improvements
-5. Clean up the team — release teammate slots once the review is published.
+{% if runtime == "claude" %}
+5. Clean up the team once the review is published:
+   1. Send a graceful shutdown to every teammate: `SendMessage(to="<name>", message={"type": "shutdown_request"})` for each implementer and the reviewer.
+   2. Wait for each teammate to go idle.
+   3. Call `TeamDelete` to remove the team directory and shared task list (`TeamDelete` uses the current team context — no arguments needed).
+{% else %}
+5. Clean up the team — release worker slots once the review is published.
+{% endif %}
 
 Do not edit this marketplace repository while executing a consumer project workflow.
 
@@ -195,3 +218,6 @@ Report the review artifact, linked {{ vocab.tickets }}, verification commands ru
 - Reviewer approving without reading code — re-review.
 - All teammates idle but tasks remain — check for stuck dependencies.
 - Lead spawns a new agent for a later wave instead of reusing an idle teammate — stop and reassign the existing slot.
+{% if runtime == "claude" %}
+- Lead spawned an `Agent` without first calling `TeamCreate`, or without passing `team_name` — abort the spawn, create the team, and re-spawn with `team_name` set.
+{% endif %}

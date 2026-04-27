@@ -170,7 +170,7 @@ Run each argv array directly through the runtime's structured command mechanism.
    - spec amendments
    - repeated friction points
    - candidate durable process improvements
-5. Clean up the team — release teammate slots once the review is published.
+5. Clean up the team — release worker slots once the review is published.
 
 Do not edit this marketplace repository while executing a consumer project workflow.
 

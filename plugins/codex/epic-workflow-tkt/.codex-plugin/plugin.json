@@ -1,6 +1,6 @@
 {
   "name": "epic-workflow-tkt",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Epic workflow plus adversarial review, tkt-flavored.",
   "author": {
     "name": "Adam Winstanley",

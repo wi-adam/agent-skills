@@ -1,6 +1,6 @@
 {
   "name": "epic-workflow-github",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Epic workflow plus adversarial review, github-flavored.",
   "author": {
     "name": "Adam Winstanley",
