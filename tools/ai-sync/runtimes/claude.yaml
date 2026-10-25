@@ -3,21 +3,16 @@ runtime: claude
 reviewer:
   model: codex
   install_prerequisite: |
-    Install and authenticate Codex locally. Add Codex as an MCP server in Claude Code:
-
-        claude mcp add codex -- codex mcp-server
-
-    Restart Claude Code after adding the server.
+    Install and authenticate Codex locally. No MCP server is needed: the review runs
+    the `codex` CLI non-interactively through the Bash tool.
   mechanism: |
-    Invoke the MCP tool named `codex` with only `prompt` and `cwd`.
-    Do not pass `sandbox` or `approval-policy`; those come from the user's Codex configuration.
-    Save the returned `threadId` and use `codex-reply` for follow-up rounds.
-  tool_name: codex
-  reply_tool_name: codex-reply
+    Run `codex exec` with the review prompt on stdin.
+    Do not pass `--sandbox`; the sandbox comes from the user's Codex configuration.
+    Save the `thread_id` from the first JSON event and use `codex exec resume` for follow-up rounds.
   verified:
-    date: 2026-04-20
-    codex_cli_version: 0.121.0
-    server: codex mcp-server
+    date: 2026-10-25
+    codex_cli_version: 0.146.0
+    command: codex exec
 
 teammate:
   mechanism: TeamCreate + Agent + SendMessage + TeamDelete (built-in)

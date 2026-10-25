@@ -15,15 +15,12 @@ Core principle: an independent reviewer should inspect the diff and changed file
 
 ## Reviewer Setup
 
-Install and authenticate Codex locally. Add Codex as an MCP server in Claude Code:
+Install and authenticate Codex locally. No MCP server is needed: the review runs
+the `codex` CLI non-interactively through the Bash tool.
 
-    claude mcp add codex -- codex mcp-server
-
-Restart Claude Code after adding the server.
-
-Invoke the MCP tool named `codex` with only `prompt` and `cwd`.
-Do not pass `sandbox` or `approval-policy`; those come from the user's Codex configuration.
-Save the returned `threadId` and use `codex-reply` for follow-up rounds.
+Run `codex exec` with the review prompt on stdin.
+Do not pass `--sandbox`; the sandbox comes from the user's Codex configuration.
+Save the `thread_id` from the first JSON event and use `codex exec resume` for follow-up rounds.
 
 ## Determine Scope
 
@@ -69,14 +66,19 @@ End with total issues by severity and verdict: APPROVED or CHANGES_REQUESTED.
 
 ## Invoke The Reviewer
 
-Invoke MCP tool `codex`:
+Write the review prompt, with concrete scope and context, to a temporary file. Then run, with the Bash tool from the project root:
 
-- `prompt`: the review prompt with concrete scope and context
-- `cwd`: project root
+    codex exec --json -o <last-message-file> - < <prompt-file>
 
-Do not pass `sandbox` or `approval-policy`. Leave them unset so Codex uses the user's configured defaults; overriding them breaks nested-sandbox environments.
+The first JSON line is `{"type":"thread.started","thread_id":"<id>"}`. Save the `thread_id`. The reviewer's final answer is written to `<last-message-file>`; read it from there.
 
-Save the returned `threadId`. Continue follow-up rounds with `codex-reply` using that `threadId`.
+Do not pass `--sandbox`. Leave it unset so Codex uses the user's configured defaults; overriding it breaks nested-sandbox environments.
+
+Continue follow-up rounds in the same session with:
+
+    codex exec resume -o <last-message-file> <thread_id> - < <prompt-file>
+
+The Codex MCP server (`codex mcp-server`) was removed in Codex 0.163 and is not used.
 
 ## Triage
 

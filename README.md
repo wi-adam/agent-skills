@@ -82,7 +82,7 @@ uv run python scripts/install_codex.py --adapter github
 
 Verified locally on 2026-04-20:
 
-- Claude Code can invoke Codex through `codex mcp-server`, exposing `codex` and `codex-reply`.
+- Claude Code can invoke Codex through the Bash tool with `codex exec --json` (the first event carries a `thread_id`) and continue the session with `codex exec resume <thread_id>`. `codex mcp-server` was deprecated and then removed upstream (openai/codex#42993, in Codex 0.163), so it is not used.
 - Codex can invoke Claude through `claude mcp serve`, exposing `Agent`.
 
 Codex plugin-bundled MCP activation is not assumed yet. Generated Codex adversarial review skills include an explicit setup requirement and stop path if `Agent` is unavailable.

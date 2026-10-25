@@ -529,14 +529,19 @@ def reviewer_call_recipe(runtime: str, runtime_config: dict[str, Any], kind: str
     if runtime == "claude":
         return "\n".join(
             [
-                f"Invoke MCP tool `{reviewer['tool_name']}`:",
+                "Write the review prompt, with concrete scope and context, to a temporary file. Then run, with the Bash tool from the project root:",
                 "",
-                "- `prompt`: the review prompt with concrete scope and context",
-                "- `cwd`: project root",
+                "    codex exec --json -o <last-message-file> - < <prompt-file>",
                 "",
-                "Do not pass `sandbox` or `approval-policy`. Leave them unset so Codex uses the user's configured defaults; overriding them breaks nested-sandbox environments.",
+                "The first JSON line is `{\"type\":\"thread.started\",\"thread_id\":\"<id>\"}`. Save the `thread_id`. The reviewer's final answer is written to `<last-message-file>`; read it from there.",
                 "",
-                f"Save the returned `threadId`. Continue follow-up rounds with `{reviewer['reply_tool_name']}` using that `threadId`.",
+                "Do not pass `--sandbox`. Leave it unset so Codex uses the user's configured defaults; overriding it breaks nested-sandbox environments.",
+                "",
+                "Continue follow-up rounds in the same session with:",
+                "",
+                "    codex exec resume -o <last-message-file> <thread_id> - < <prompt-file>",
+                "",
+                "The Codex MCP server (`codex mcp-server`) was removed in Codex 0.163 and is not used.",
             ]
         )
     return "\n".join(
